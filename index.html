@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Meeting Recorder</title>
 <style>
-/* Layout: one narrow column, setup card on top, live meters and controls below */
+/* Layout: one narrow column; setup, then the live recording panel with speaker tags */
 :root {
   --bg: #f5f6f8; --surface: #ffffff; --fg: #1b1f27; --muted: #5b6372;
   --line: #dde1e8; --accent: #2f5bd3; --rec: #d23a3a; --ok: #1f8a4c;
@@ -19,17 +19,21 @@
 }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.5 var(--font); }
-main { max-width: 640px; margin: 0 auto; padding-inline: 16px; padding-block: 32px 48px; display: grid; gap: 20px; }
+main { max-width: 680px; margin: 0 auto; padding-inline: 16px; padding-block: 32px 48px; display: grid; gap: 20px; }
 h1 { font-size: 24px; margin: 0; text-wrap: balance; }
+h2 { font-size: 15px; margin: 0; }
 p { margin: 0; }
 .sub { color: var(--muted); }
-.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 20px; display: grid; gap: 14px; }
-label { font-weight: 600; font-size: 13px; letter-spacing: .02em; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 20px; display: grid; gap: 14px; min-width: 0; }
+label, .lbl { font-weight: 600; font-size: 13px; letter-spacing: .02em; }
 input[type=text], textarea { width: 100%; font: inherit; color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; }
-textarea { min-height: 70px; resize: vertical; }
+textarea { min-height: 80px; resize: vertical; }
 .field { display: grid; gap: 6px; }
-.check { display: flex; gap: 8px; align-items: flex-start; font-weight: 400; font-size: 14px; letter-spacing: 0; }
-.check input { margin-top: 4px; }
+.modes { display: grid; gap: 8px; }
+.mode { display: flex; gap: 10px; align-items: flex-start; font-weight: 400; letter-spacing: 0; font-size: 14px; border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; cursor: pointer; }
+.mode input { margin-top: 4px; }
+.mode b { display: block; }
+.mode span { color: var(--muted); }
 ol { margin: 0; padding-left: 20px; display: grid; gap: 4px; color: var(--muted); }
 ol b { color: var(--fg); }
 .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
@@ -50,13 +54,19 @@ button:disabled { opacity: .45; cursor: default; }
 .msg.err { border-color: var(--rec); color: var(--rec); }
 .msg.good { border-color: var(--ok); color: var(--ok); }
 .small { font-size: 13px; color: var(--muted); }
+.tags { display: flex; flex-wrap: wrap; gap: 8px; }
+.tags button { padding: 8px 12px; font-size: 14px; }
+.tags button.cur { background: var(--accent); border-color: var(--accent); color: #fff; }
+.tags kbd { font: 12px var(--mono); opacity: .7; margin-right: 6px; }
+.log { font: 13px/1.6 var(--mono); max-height: 140px; overflow: auto; color: var(--muted); border-top: 1px solid var(--line); padding-top: 8px; }
+.log:empty::before { content: "Speaker changes you tap will show here."; }
 </style>
 </head>
 <body>
 <main>
   <header style="display:grid;gap:6px">
     <h1>Meeting Recorder</h1>
-    <p class="sub">Records the meeting audio and your microphone on separate channels, on your own computer, without using Zoom, Teams or Meet recording. Open this file in Google Chrome or Microsoft Edge.</p>
+    <p class="sub">Records the whole conversation, your voice and everyone else's, into one MP3 on your computer. It works without Zoom, Teams or Meet's own recording. Use Google Chrome or Microsoft Edge on a computer.</p>
   </header>
 
   <section class="card" id="setup">
@@ -68,16 +78,23 @@ button:disabled { opacity: .45; cursor: default; }
       <label for="people">Who is attending (one per line, you first)</label>
       <textarea id="people" placeholder="Reddy&#10;Priya&#10;Arjun"></textarea>
     </div>
-    <label class="check"><input type="checkbox" id="withVideo">
-      <span>Also record the screen. The file is bigger, but the highlighted speaker tile lets the names be matched more accurately.</span></label>
+    <div class="field">
+      <span class="lbl">Where is the meeting?</span>
+      <div class="modes">
+        <label class="mode"><input type="radio" name="mode" id="modeOnline" value="online" checked>
+          <div><b>Online call</b><span>Records your mic plus the call audio from Zoom, Teams or Meet.</span></div></label>
+        <label class="mode"><input type="radio" name="mode" id="modeRoom" value="room">
+          <div><b>In a room</b><span>Records only the microphone. Put the laptop in the middle of the table.</span></div></label>
+      </div>
+    </div>
     <div>
-      <label>How it works</label>
+      <span class="lbl">How it works</span>
       <ol>
-        <li>Wear <b>headphones</b> so the call doesn't echo into your mic.</li>
+        <li>For online calls, wear <b>headphones</b> so the call doesn't echo into your mic.</li>
         <li>Press <b>Start recording</b> and allow the microphone.</li>
-        <li>A share window opens. <b>Windows:</b> pick "Entire screen" and turn on <b>"Also share system audio"</b>. This works with the Zoom or Teams desktop app. <b>Mac:</b> join the meeting in a Chrome tab (Meet, or the Zoom or Teams web version), pick <b>that tab</b>, and turn on <b>"Also share tab audio"</b>.</li>
-        <li>Ask everyone to say their name once at the start.</li>
-        <li>Press <b>Stop and save</b> when the meeting ends, then upload the saved files to the project thread.</li>
+        <li>For online calls a share window opens. <b>Windows:</b> pick "Entire screen" and turn on <b>"Also share system audio"</b>. This works with the Zoom or Teams desktop app. <b>Mac:</b> join the meeting in a Chrome tab (Meet, or the Zoom or Teams web version), pick <b>that tab</b>, and turn on <b>"Also share tab audio"</b>.</li>
+        <li>Ask everyone to say their name once at the start ("Hi, this is Priya"). This is what lets the transcript put the right name on each voice.</li>
+        <li>Press <b>Stop and save</b> when the meeting ends. You get an MP3 and a notes file. Upload both to the project thread for the transcript and minutes.</li>
       </ol>
     </div>
   </section>
@@ -92,98 +109,132 @@ button:disabled { opacity: .45; cursor: default; }
       </div>
     </div>
     <div class="meter"><span>You (mic)</span><div class="bar"><i id="mMic"></i></div></div>
-    <div class="meter"><span>Meeting audio</span><div class="bar"><i id="mSys"></i></div></div>
+    <div class="meter" id="sysMeter"><span>Call audio</span><div class="bar"><i id="mSys"></i></div></div>
     <div id="msg" class="msg" hidden></div>
-    <p class="small">Your voice is saved on the left channel and everyone else on the right, so you're always labelled correctly. Keep this tab open while recording. Nothing is uploaded anywhere: the file is saved to your Downloads folder.</p>
+
+    <div class="field">
+      <h2>Who is speaking? (optional)</h2>
+      <p class="small">If you can keep this window in view, tap a name when someone starts talking, or press its number key. These marks make the names in the transcript more accurate. You can skip this: the name introductions are usually enough.</p>
+      <div class="tags" id="tags"></div>
+      <div class="log" id="log"></div>
+    </div>
+    <p class="small">The file is saved to your Downloads folder. Nothing is uploaded anywhere.</p>
   </section>
 </main>
 
+<script src="vendor/lame.min.js"></script>
 <script>
 const $ = id => document.getElementById(id);
-let micStream, dispStream, ctx, recorder, chunks = [], startedAt = 0, pausedMs = 0, pauseStart = 0, tick, meterRaf;
+const KBPS = 128;
+let micStream, dispStream, ctx, proc, encoder, mp3 = [], state = 'idle';
+let samples = 0, rate = 48000, startedAt = 0, tick;
+let peakMic = 0, peakSys = 0, youTalking = false, youSince = 0, quietBlocks = 0;
+const youSegments = [], tagLog = [];
 
 function show(text, kind) { const m = $('msg'); m.hidden = false; m.className = 'msg ' + (kind || ''); m.textContent = text; }
-function fmt(ms) { const s = Math.floor(ms / 1000); return [s / 3600, s / 60 % 60, s % 60].map(n => String(Math.floor(n)).padStart(2, '0')).join(':'); }
+function fmt(sec) { sec = Math.floor(sec); return [sec / 3600, sec / 60 % 60, sec % 60].map(n => String(Math.floor(n)).padStart(2, '0')).join(':'); }
 function slug(s) { return (s || 'meeting').trim().replace(/[^\w\- ]+/g, '').replace(/\s+/g, '-').slice(0, 50) || 'meeting'; }
-function stamp() { const d = new Date(), p = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}`; }
+function stamp(d) { const p = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}`; }
+function people() { return $('people').value.split('\n').map(s => s.trim()).filter(Boolean); }
+function nowSec() { return samples / rate; }
+function online() { return $('modeOnline').checked; }
 
-function meter(analyser, el) {
-  const buf = new Float32Array(analyser.fftSize);
-  return () => { analyser.getFloatTimeDomainData(buf); let peak = 0; for (const v of buf) peak = Math.max(peak, Math.abs(v)); el.style.width = Math.min(100, peak * 140) + '%'; };
+// Speaker tag buttons, rebuilt from the attendee list
+function renderTags() {
+  const box = $('tags'); box.textContent = '';
+  const names = people(); if (!names.length) names.push('Me', 'Someone else');
+  names.slice(0, 9).forEach((n, i) => {
+    const b = document.createElement('button'); b.type = 'button'; b.dataset.name = n;
+    const k = document.createElement('kbd'); k.textContent = i + 1; b.append(k, n);
+    b.onclick = () => tag(n); box.appendChild(b);
+  });
 }
-
-function pickMime(video) {
-  const opts = video ? ['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm', 'video/mp4']
-                     : ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4'];
-  return opts.find(t => window.MediaRecorder && MediaRecorder.isTypeSupported(t)) || '';
+function tag(name) {
+  if (state !== 'recording') return;
+  tagLog.push({ t: nowSec(), name });
+  document.querySelectorAll('#tags button').forEach(b => b.classList.toggle('cur', b.dataset.name === name));
+  const line = document.createElement('div'); line.textContent = `${fmt(nowSec())}  ${name}`;
+  $('log').prepend(line);
 }
+$('people').addEventListener('input', renderTags); renderTags();
+document.addEventListener('keydown', e => {
+  if (e.target.matches('input, textarea')) return;
+  const n = parseInt(e.key, 10); const btn = $('tags').children[n - 1];
+  if (n >= 1 && btn) tag(btn.dataset.name);
+});
 
 async function start() {
+  if (typeof lamejs === 'undefined') { show('The MP3 encoder did not load. Keep vendor/lame.min.js next to index.html and reload.', 'err'); return; }
   $('msg').hidden = true;
-  const withVideo = $('withVideo').checked;
   try {
     micStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
   } catch (e) { show('The microphone was blocked. Allow it in the address bar (the camera/mic icon) and press Start again.', 'err'); return; }
-  try {
-    dispStream = await navigator.mediaDevices.getDisplayMedia({
-      video: true,
-      audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
-      systemAudio: 'include', selfBrowserSurface: 'exclude'
-    });
-  } catch (e) { cleanup(); show('Sharing was cancelled. Press Start again and pick the screen or meeting tab to share.', 'err'); return; }
-  if (!dispStream.getAudioTracks().length) {
-    cleanup();
-    show('No meeting audio was shared. Press Start again and tick "Also share system audio" (Windows) or "Also share tab audio" (meeting tab).', 'err');
-    return;
+  if (online()) {
+    try {
+      dispStream = await navigator.mediaDevices.getDisplayMedia({
+        video: true, audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
+        systemAudio: 'include', selfBrowserSurface: 'exclude'
+      });
+    } catch (e) { cleanup(); show('Sharing was cancelled. Press Start again and pick the screen or meeting tab. For a meeting in a room, choose "In a room".', 'err'); return; }
+    if (!dispStream.getAudioTracks().length) {
+      cleanup(); show('No call audio was shared. Press Start again and turn on "Also share system audio" (Windows) or "Also share tab audio" (meeting tab).', 'err'); return;
+    }
+    dispStream.getVideoTracks().forEach(t => t.enabled = false); // only the audio is kept
+    dispStream.getTracks().forEach(t => t.addEventListener('ended', () => { if (state !== 'idle') stop(); }));
   }
 
-  // Mix: mic -> left channel, meeting audio -> right channel
-  ctx = new AudioContext({ sampleRate: 48000 });
-  const micSrc = ctx.createMediaStreamSource(micStream);
-  const sysSrc = ctx.createMediaStreamSource(new MediaStream(dispStream.getAudioTracks()));
-  const toMono = node => { const g = ctx.createGain(); g.channelCount = 1; g.channelCountMode = 'explicit'; g.channelInterpretation = 'speakers'; node.connect(g); return g; };
+  ctx = new AudioContext();
+  rate = ctx.sampleRate;
+  encoder = new lamejs.Mp3Encoder(1, rate, KBPS);
+  mp3 = []; samples = 0; youSegments.length = 0; tagLog.length = 0; youTalking = false; $('log').textContent = '';
+
+  // Mic on input channel 0, call audio on channel 1; both are mixed into one mono track
   const merger = ctx.createChannelMerger(2);
-  toMono(micSrc).connect(merger, 0, 0);
-  toMono(sysSrc).connect(merger, 0, 1);
-  const dest = ctx.createMediaStreamDestination();
-  dest.channelCount = 2;
-  merger.connect(dest);
+  const mono = node => { const g = ctx.createGain(); g.channelCount = 1; g.channelCountMode = 'explicit'; node.connect(g); return g; };
+  mono(ctx.createMediaStreamSource(micStream)).connect(merger, 0, 0);
+  if (dispStream) mono(ctx.createMediaStreamSource(new MediaStream(dispStream.getAudioTracks()))).connect(merger, 0, 1);
+  proc = ctx.createScriptProcessor(4096, 2, 1);
+  merger.connect(proc);
+  const sink = ctx.createGain(); sink.gain.value = 0; proc.connect(sink); sink.connect(ctx.destination);
+  proc.onaudioprocess = onAudio;
 
-  const aMic = ctx.createAnalyser(), aSys = ctx.createAnalyser();
-  micSrc.connect(aMic); sysSrc.connect(aSys);
-  const m1 = meter(aMic, $('mMic')), m2 = meter(aSys, $('mSys'));
-  const loop = () => { m1(); m2(); meterRaf = requestAnimationFrame(loop); }; loop();
-
-  const tracks = [...dest.stream.getAudioTracks()];
-  if (withVideo) tracks.push(...dispStream.getVideoTracks());
-  else dispStream.getVideoTracks().forEach(t => t.enabled = false);
-  const mime = pickMime(withVideo);
-  recorder = new MediaRecorder(new MediaStream(tracks), mime ? { mimeType: mime, audioBitsPerSecond: 128000 } : {});
-  chunks = [];
-  recorder.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
-  recorder.onstop = save;
-  recorder.start(1000);
-
-  // If the person stops sharing from Chrome's bar, finish cleanly
-  dispStream.getTracks().forEach(t => t.addEventListener('ended', () => { if (recorder && recorder.state !== 'inactive') stop(); }));
-
-  startedAt = Date.now(); pausedMs = 0;
-  tick = setInterval(() => { const now = recorder.state === 'paused' ? pauseStart : Date.now(); $('timer').textContent = fmt(now - startedAt - pausedMs); }, 250);
+  state = 'recording'; startedAt = Date.now();
+  tick = setInterval(ui, 200);
+  $('sysMeter').hidden = !dispStream;
   $('dot').classList.add('on');
   $('start').disabled = true; $('pause').disabled = false; $('stop').disabled = false;
-  show('Recording. Check that both meters move when people talk.', 'good');
+  document.querySelectorAll('input[name=mode]').forEach(r => r.disabled = true);
+  show(dispStream ? 'Recording. Check that both bars move when people talk.' : 'Recording the room.', 'good');
+}
+
+function onAudio(e) {
+  const a = e.inputBuffer.getChannelData(0), b = e.inputBuffer.getChannelData(1);
+  let pm = 0, ps = 0, em = 0, es = 0;
+  for (let i = 0; i < a.length; i++) { const x = Math.abs(a[i]), y = Math.abs(b[i]); if (x > pm) pm = x; if (y > ps) ps = y; em += a[i] * a[i]; es += b[i] * b[i]; }
+  peakMic = Math.max(peakMic * 0.85, pm); peakSys = Math.max(peakSys * 0.85, ps);
+  if (state !== 'recording') return;
+  const pcm = new Int16Array(a.length);
+  for (let i = 0; i < a.length; i++) { let v = a[i] + b[i]; v = v > 1 ? 1 : v < -1 ? -1 : v; pcm[i] = v < 0 ? v * 0x8000 : v * 0x7fff; }
+  const out = encoder.encodeBuffer(pcm); if (out.length) mp3.push(new Uint8Array(out));
+  // Mark when your mic is clearly louder than the call: that stretch is you talking
+  if (dispStream) {
+    const rm = Math.sqrt(em / a.length), rs = Math.sqrt(es / a.length);
+    const you = rm > 0.02 && rm > rs * 1.5;
+    if (you) { quietBlocks = 0; if (!youTalking) { youTalking = true; youSince = samples / rate; } }
+    else if (youTalking && ++quietBlocks > 8) { youTalking = false; youSegments.push([youSince, samples / rate]); }
+  }
+  samples += a.length;
+}
+
+function ui() {
+  $('timer').textContent = fmt(nowSec());
+  $('mMic').style.width = Math.min(100, peakMic * 140) + '%';
+  $('mSys').style.width = Math.min(100, peakSys * 140) + '%';
 }
 
 function togglePause() {
-  if (recorder.state === 'recording') { recorder.pause(); pauseStart = Date.now(); $('pause').textContent = 'Resume'; $('dot').classList.remove('on'); show('Paused.'); }
-  else if (recorder.state === 'paused') { recorder.resume(); pausedMs += Date.now() - pauseStart; $('pause').textContent = 'Pause'; $('dot').classList.add('on'); show('Recording.', 'good'); }
-}
-
-function stop() {
-  if (recorder && recorder.state !== 'inactive') {
-    if (recorder.state === 'paused') pausedMs += Date.now() - pauseStart;
-    recorder.stop();
-  }
+  if (state === 'recording') { state = 'paused'; $('pause').textContent = 'Resume'; $('dot').classList.remove('on'); show('Paused. Nothing is being recorded.'); }
+  else if (state === 'paused') { state = 'recording'; $('pause').textContent = 'Pause'; $('dot').classList.add('on'); show('Recording.', 'good'); }
 }
 
 function download(blob, name) {
@@ -193,39 +244,48 @@ function download(blob, name) {
   setTimeout(() => URL.revokeObjectURL(a.href), 60000);
 }
 
-function save() {
-  const type = recorder.mimeType || 'audio/webm';
-  const ext = type.includes('mp4') ? (type.startsWith('video') ? 'mp4' : 'm4a') : 'webm';
-  const base = `${slug($('title').value)}_${stamp()}`;
-  download(new Blob(chunks, { type }), `${base}.${ext}`);
-  const people = $('people').value.split('\n').map(s => s.trim()).filter(Boolean);
+function stop() {
+  if (state === 'idle') return;
+  state = 'idle';
+  if (youTalking) youSegments.push([youSince, nowSec()]);
+  const end = encoder.flush(); if (end.length) mp3.push(new Uint8Array(end));
+  const base = `${slug($('title').value)}_${stamp(new Date(startedAt))}`;
+  download(new Blob(mp3, { type: 'audio/mpeg' }), `${base}.mp3`);
+  const names = people();
   const info = [
     `Meeting: ${$('title').value.trim() || '(untitled)'}`,
     `Recorded: ${new Date(startedAt).toString()}`,
-    `Length: ${$('timer').textContent}`,
-    `Audio layout: left channel = ${people[0] || 'the recorder (me)'} (microphone), right channel = everyone else (meeting audio)`,
-    `Video included: ${type.startsWith('video') ? 'yes' : 'no'}`,
-    '', 'Attendees:', ...(people.length ? people.map(p => '- ' + p) : ['- (not filled in)'])
+    `Length: ${fmt(nowSec())}`,
+    `Type: ${dispStream ? 'online call (mic + call audio, mixed)' : 'in a room (microphone only)'}`,
+    `Recorded by: ${names[0] || '(not filled in)'}`,
+    '', 'Attendees:', ...(names.length ? names.map(p => '- ' + p) : ['- (not filled in)']),
+    '', 'Speaker marks tapped during the meeting:',
+    ...(tagLog.length ? tagLog.map(t => `${fmt(t.t)}  ${t.name}`) : ['(none)']),
+    '', `Times when ${names[0] || 'the recorder'} was speaking (detected from the mic):`,
+    ...(youSegments.length ? youSegments.filter(s => s[1] - s[0] >= 1).map(s => `${fmt(s[0])} - ${fmt(s[1])}`) : ['(not available)'])
   ].join('\n');
-  download(new Blob([info], { type: 'text/plain' }), `${base}_info.txt`);
+  download(new Blob([info], { type: 'text/plain' }), `${base}_notes.txt`);
   cleanup();
   $('dot').classList.remove('on');
   $('start').disabled = false; $('pause').disabled = true; $('stop').disabled = true; $('pause').textContent = 'Pause';
-  show(`Saved ${base}.${ext} and ${base}_info.txt to your Downloads. Upload both to the project thread for the minutes.`, 'good');
+  document.querySelectorAll('input[name=mode]').forEach(r => r.disabled = false);
+  show(`Saved ${base}.mp3 and ${base}_notes.txt to your Downloads. Upload both to the project thread for the transcript and minutes.`, 'good');
 }
 
 function cleanup() {
-  clearInterval(tick); cancelAnimationFrame(meterRaf);
+  clearInterval(tick);
   [micStream, dispStream].forEach(s => s && s.getTracks().forEach(t => t.stop()));
+  micStream = dispStream = null;
+  if (proc) proc.onaudioprocess = null;
   if (ctx) ctx.close(); ctx = null;
-  $('mMic').style.width = $('mSys').style.width = '0';
+  peakMic = peakSys = 0; $('mMic').style.width = $('mSys').style.width = '0';
 }
 
 $('start').onclick = start;
 $('pause').onclick = togglePause;
 $('stop').onclick = stop;
-window.addEventListener('beforeunload', e => { if (recorder && recorder.state !== 'inactive') { e.preventDefault(); e.returnValue = ''; } });
-if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) show('This browser can\'t record meetings. Open this file in Google Chrome or Microsoft Edge on a computer.', 'err');
+window.addEventListener('beforeunload', e => { if (state !== 'idle') { e.preventDefault(); e.returnValue = ''; } });
+if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) show('This browser can\'t record meetings. Open this page in Google Chrome or Microsoft Edge on a computer.', 'err');
 </script>
 </body>
 </html>
